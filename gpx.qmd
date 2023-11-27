@@ -1,0 +1,79 @@
+---
+title: "Parse gpx files and plot"
+format: html
+engine: jupyter
+---
+
+## setup 
+```{python}
+import folium
+import gpxpy
+import numpy as np
+import pandas as pd
+```
+
+## read data
+
+```{python}
+fname = 'data/2023-11-25_1381944747_Bike Ride.gpx'
+with open(fname,'r') as f:
+        gpx = gpxpy.parse(f)
+```
+
+## parse into pandas dataframe
+
+The example gpx file I have includes one track with one segment. 
+
+The timezone information is UTC, but comes in withe an unknown timezone identifier:
+```{python}
+
+```
+
+```{python}
+pts = gpx.tracks[0].segments[0].points
+```
+
+The timezone information is UTC, but comes in withe an unknown timezone identifier:
+```{{python}}
+print(pts[0].time)
+
+datetime.datetime(2023, 11, 25, 16, 57, 43, 862000, tzinfo=SimpleTZ({self.tzname(None}!r))
+```
+
+```{python}
+latitude = np.zeros(len(pts))
+longitude = np.zeros(len(pts))
+elevation = np.zeros(len(pts))
+time = np.zeros(len(pts),dtype='<M8[us]')# np.datetime64[us])
+
+for idx,pt in enumerate(pts):
+    latitude[idx] = pt.latitude
+    longitude[idx] = pt.longitude
+    elevation[idx] = pt.elevation
+    time[idx] = np.datetime64(pt.time.replace(tzinfo=None))
+
+cols = [
+    'latitude',
+    'longitude',
+    'elevation',
+]
+df = pd.DataFrame(data = np.array([latitude, longitude, elevation]).T, index=time, columns = cols)
+df.index.name='time_utc'
+```
+
+Save the data frame as a csv file:
+```{python}
+df.to_csv('data/2023-11-25_1381944747_Bike Ride.csv')
+```
+
+## create a map 
+
+```{python}
+m = folium.Map(location=(df.latitude.mean(),df.longitude.mean()))
+
+coord = df[['latitude','longitude']]
+
+folium.PolyLine(coord, tooltip="Bike Ride").add_to(m)
+
+m
+```

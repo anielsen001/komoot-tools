@@ -1,0 +1,6 @@
+project:
+  title: "komoot-tools"
+  output-dir: _site
+
+format:
+  html: default
